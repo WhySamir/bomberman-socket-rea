@@ -26,17 +26,14 @@ export type MultiplayerSocket = Socket<
 >;
 
 function resolveServerUrl(): string {
-  const envUrl = import.meta.env.VITE_SERVER_URL;
+  const envUrl = import.meta.env.BACKEND_URL || import.meta.env.VITE_SERVER_URL;
   if (envUrl) return envUrl.replace(/\/+$/, "");
-  if (typeof window !== "undefined") {
-    const isViteDevPort =
-      window.location.port === "5173" || window.location.port === "4173";
-    if (isViteDevPort) {
-      return `${window.location.protocol}//${window.location.hostname}:3001`;
-    }
-    return window.location.origin;
-  }
-  return "http://localhost:3001";
+  const { protocol, hostname, port } = window.location;
+  const isLocalHost =
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+  // No env configured: assume the local development backend on port 3001.
+  if (isLocalHost && port !== "3001") return `${protocol}//${hostname}:3001`;
+  return window.location.origin;
 }
 
 export class MultiplayerClient {

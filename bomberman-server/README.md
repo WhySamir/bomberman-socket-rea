@@ -41,8 +41,11 @@ npm run dev
 ```
 
 Open `http://localhost:5173`, choose **Play Online**, and create or join a room.
-On Vite's dev ports the client automatically connects to port `3001` on the same
-hostname. Set `VITE_SERVER_URL` at build time to point somewhere else.
+The client connects to the backend URL in `bomberman-ts/.env`
+(`BACKEND_URL`). Change it there, or set the same variable in the static host's
+build environment, to point at a different backend. When `BACKEND_URL` is
+missing, the client falls back to `http://localhost:3001` on a local host and to
+same-origin elsewhere.
 
 Server commands:
 
@@ -71,7 +74,7 @@ in the Render dashboard. Real environment variables take precedence.
 | `MAX_ROOMS`       | `100`                  | In-memory room cap for this process.                                                                                         |
 | `SERVE_CLIENT`    | `true`                 | Serve `bomberman-ts/dist` from the same service unless set to `false`.                                                       |
 | `CLIENT_DIST`     | `../bomberman-ts/dist` | Optional explicit client build path.                                                                                         |
-| `VITE_SERVER_URL` | same origin            | Client build-time backend URL when the client is hosted separately.                                                          |
+| `BACKEND_URL`     | same origin            | Client build-time backend URL when the client is hosted separately.                                                          |
 
 ## Deploy on Render
 
@@ -101,7 +104,7 @@ speak Socket.IO over the same origin.
 ### Client and server on separate hosts
 
 1. Build the client with the backend URL:
-   `VITE_SERVER_URL=https://your-service.onrender.com npm run build`
+   `BACKEND_URL=https://your-service.onrender.com npm run build`
 2. Deploy `bomberman-ts/dist` to a static host.
 3. Set `CLIENT_ORIGIN=https://your-client.example` on the Render service and
    `SERVE_CLIENT=false`.

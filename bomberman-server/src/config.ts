@@ -17,7 +17,7 @@ export const serverRoot = path.resolve(here, "..");
 export function loadConfig(): ServerConfig {
   const port = Number.parseInt(process.env.PORT ?? "3001", 10);
   const host = process.env.HOST ?? "0.0.0.0";
-  const clientOrigins = (process.env.CLIENT_ORIGIN ?? "")
+  const clientOrigins = (process.env.CLIENT_ORIGIN ?? "http://localhost:5173")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
