@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bomberman REA — Reverse Engineered Battle Arena</title>
+    <meta
+      name="description"
+      content="Faithful recreation of Bombermaaan reverse engineered from x86 binary using REA and Ghidra."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/style.css" />
+    <link rel="stylesheet" href="./src/menu.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- ===================== FRONT MENU ===================== -->
+      <section id="mainMenuScreen" class="screen menu-screen">
+        <div class="menu-hero">
+          <div class="menu-logo-row">
+            <div class="logo-badge">REA</div>
+            <span class="menu-build-tag">Reverse-engineered build</span>
+          </div>
+
+          <h1 class="menu-title">BOMBERMAN <span>REDUX</span></h1>
+          <p class="menu-subtitle">
+            15 × 13 arena • One human against a bot squad • Sudden death walls
+          </p>
+
+          <div class="menu-actions">
+            <button id="startGameBtn" class="menu-btn menu-btn-primary">
+              <span class="menu-btn-icon">▶</span>
+              <span class="menu-btn-copy">
+                <strong>Start Game</strong>
+                <small>Level 1 or Level Impossible</small>
+              </span>
+            </button>
+
+            <button id="onlineBtn" class="menu-btn menu-btn-primary">
+              <span class="menu-btn-icon">🛰️</span>
+              <span class="menu-btn-copy">
+                <strong>Play Online</strong>
+                <small>Host or join a 4-player room — bots fill empty seats</small>
+              </span>
+            </button>
+
+            <button id="multiplayerBtn" class="menu-btn">
+              <span class="menu-btn-icon">🌐</span>
+              <span class="menu-btn-copy">
+                <strong>Local Duo</strong>
+                <small>Two players, one keyboard</small>
+              </span>
+            </button>
+
+            <button id="settingsBtn" class="menu-btn">
+              <span class="menu-btn-icon">⚙️</span>
+              <span class="menu-btn-copy">
+                <strong>Settings</strong>
+                <small>Sound, match time, bot squad size</small>
+              </span>
+            </button>
+          </div>
+
+          <p class="menu-footnote">Last selected level: <strong id="menuLevelLabel">Level 1</strong></p>
+        </div>
+      </section>
+
+      <!-- ===================== LEVEL SELECT ===================== -->
+      <section id="levelSelectScreen" class="screen level-screen hidden">
+        <div class="screen-head">
+          <button id="levelBackBtn" class="btn btn-secondary">← Back</button>
+          <div class="screen-head-copy">
+            <h2 id="levelScreenTitle">Select Level</h2>
+            <p id="levelScreenSubtitle">Choose the arena rules.</p>
+          </div>
+        </div>
+
+        <div id="levelCards" class="level-cards"></div>
+        <p id="levelScreenHint" class="screen-hint"></p>
+      </section>
+
+      <!-- ===================== SETTINGS ===================== -->
+      <section id="settingsScreen" class="screen settings-screen hidden">
+        <div class="screen-head">
+          <button id="settingsBackBtn" class="btn btn-secondary">← Back</button>
+          <div class="screen-head-copy">
+            <h2>Settings</h2>
+            <p>Applies to the next match you start.</p>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <div class="setting-row">
+            <div class="setting-copy">
+              <strong>Sound effects</strong>
+              <small>Procedural 8-bit bombs, explosions and fanfares</small>
+            </div>
+            <button id="settingsSoundBtn" class="btn btn-secondary">🔊 Sound: ON</button>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-copy">
+              <strong>Match time</strong>
+              <small>Sudden death walls close in when the clock runs out</small>
+            </div>
+            <select id="settingsTime" class="selector-input">
+              <option value="60">1:00</option>
+              <option value="120">2:00</option>
+              <option value="180" selected>3:00</option>
+              <option value="300">5:00</option>
+              <option value="0">Unlimited (∞)</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-copy">
+              <strong>Bot squad size</strong>
+              <small>Extra bots join the hunt (up to five combatants)</small>
+            </div>
+            <select id="settingsBots" class="selector-input">
+              <option value="1">1 Bot</option>
+              <option value="2">2 Bots</option>
+              <option value="3" selected>3 Bots</option>
+              <option value="4">4 Bots</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-copy">
+              <strong>AI debug heatmap</strong>
+              <small>Danger zones, BFS distances and current bot target</small>
+            </div>
+            <button id="settingsDebugBtn" class="btn btn-secondary">🛠️ AI Debug: OFF</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== ONLINE MULTIPLAYER ===================== -->
+      <section id="onlineScreen" class="screen online-screen hidden">
+        <div class="screen-head">
+          <button id="onlineBackBtn" class="btn btn-secondary">← Back</button>
+          <div class="screen-head-copy">
+            <h2>Online Multiplayer</h2>
+            <p>
+              Host a room for up to four bombers, or join with a room code. Empty
+              seats can be filled with bots when the host starts.
+            </p>
+          </div>
+        </div>
+
+        <div class="online-grid">
+          <article class="panel-card online-card">
+            <span class="online-card-icon">🛰️</span>
+            <h3>Host a room</h3>
+            <p>
+              You control the match settings and can start as soon as two
+              combatants are ready.
+            </p>
+            <label class="online-label" for="onlineName">Bomber name</label>
+            <input
+              id="onlineName"
+              class="selector-input online-input"
+              maxlength="16"
+              autocomplete="nickname"
+              placeholder="White Bomber"
+            />
+            <button id="createRoomBtn" class="btn btn-primary btn-large">
+              Create Room
+            </button>
+          </article>
+
+          <article class="panel-card online-card">
+            <span class="online-card-icon">🔑</span>
+            <h3>Join a room</h3>
+            <p>
+              Ask the host for the five-character code, or open their invite
+              link.
+            </p>
+            <label class="online-label" for="joinCode">Room code</label>
+            <input
+              id="joinCode"
+              class="selector-input online-input online-code-input"
+              maxlength="5"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="ABC12"
+            />
+            <button id="joinRoomBtn" class="btn btn-primary btn-large">
+              Join Room
+            </button>
+          </article>
+        </div>
+
+        <p id="onlineStatus" class="online-status" role="status"></p>
+      </section>
+
+      <!-- ===================== ROOM LOBBY ===================== -->
+      <section id="lobbyScreen" class="screen lobby-screen hidden">
+        <div class="screen-head">
+          <button id="lobbyLeaveBtn" class="btn btn-secondary">← Leave</button>
+          <div class="screen-head-copy">
+            <h2>Room <span id="lobbyCode" class="lobby-code">-----</span></h2>
+            <p id="lobbySubtitle">Waiting for players…</p>
+          </div>
+          <button id="copyInviteBtn" class="btn btn-secondary lobby-copy-btn">
+            🔗 Copy Invite
+          </button>
+        </div>
+
+        <div class="lobby-grid">
+          <div class="panel-card">
+            <div class="panel-top-row">
+              <h3>Combatants</h3>
+              <span id="lobbyCount" class="alive-count-badge">1 / 4</span>
+            </div>
+            <ul id="lobbyPlayers" class="lobby-players"></ul>
+            <p class="screen-hint">
+              Four seats. The host can fill empty seats with bots when starting.
+            </p>
+          </div>
+
+          <div class="panel-card lobby-settings" id="hostSettings">
+            <h3>Match settings</h3>
+
+            <div class="setting-row lobby-setting-row">
+              <div class="setting-copy">
+                <strong>Fill empty seats with bots</strong>
+                <small>
+                  Up to four combatants. Turn off to start with humans only.
+                </small>
+              </div>
+              <input
+                id="lobbyFillBots"
+                type="checkbox"
+                class="online-checkbox"
+                checked
+              />
+            </div>
+
+            <div class="setting-row lobby-setting-row">
+              <div class="setting-copy">
+                <strong>Match time</strong>
+                <small>Sudden death walls close in when the clock runs out.</small>
+              </div>
+              <select id="lobbyTime" class="selector-input">
+                <option value="60">1:00</option>
+                <option value="120">2:00</option>
+                <option value="180" selected>3:00</option>
+                <option value="300">5:00</option>
+                <option value="0">Unlimited (∞)</option>
+              </select>
+            </div>
+
+            <div class="setting-row lobby-setting-row">
+              <div class="setting-copy">
+                <strong>Bot difficulty</strong>
+                <small>Level Impossible bots predict your movement.</small>
+              </div>
+              <select id="lobbyLevel" class="selector-input">
+                <option value="classic">Level 1 · Normal</option>
+                <option value="impossible">Level Impossible</option>
+              </select>
+            </div>
+
+            <button id="lobbyStartBtn" class="btn btn-primary btn-large">
+              ▶ Start Match
+            </button>
+            <p id="lobbyHostHint" class="screen-hint">
+              Only the host can change settings or start the match.
+            </p>
+          </div>
+        </div>
+
+        <p id="lobbyStatus" class="online-status" role="status"></p>
+      </section>
+
+      <!-- ===================== GAME ===================== -->
+      <div id="gameShell" class="game-shell hidden">
+        <!-- Header Bar -->
+        <header class="app-header">
+          <div class="header-left">
+            <div class="logo-badge">REA</div>
+            <div class="title-group">
+              <h1 class="game-title">BOMBERMAN <span>REDUX</span></h1>
+              <p class="game-subtitle">
+                Reverse-Engineered Battle Arena • Last Man Standing
+              </p>
+            </div>
+          </div>
+
+          <div class="header-center">
+            <div class="match-timer-box" id="timerBox">
+              <span class="timer-label" id="timerLabel">ROUND TIME</span>
+              <span id="matchTimer" class="timer-value">3:00</span>
+            </div>
+            <div id="suddenDeathBadge" class="sudden-death-pill hidden">
+              ⚡ SUDDEN DEATH
+            </div>
+          </div>
+
+          <div class="header-right">
+            <div id="levelBadge" class="level-badge">LEVEL 1</div>
+
+            <!-- Time Limit Setting -->
+            <div class="setting-group">
+              <label for="timeLimitSelect" class="setting-label">⏱️ Time:</label>
+              <select id="timeLimitSelect" class="selector-input">
+                <option value="60">1:00</option>
+                <option value="120">2:00</option>
+                <option value="180" selected>3:00</option>
+                <option value="300">5:00</option>
+                <option value="0">Unlimited (∞)</option>
+              </select>
+            </div>
+
+            <!-- Bot Count Setting -->
+            <div class="setting-group">
+              <label for="botCountSelect" class="setting-label">🤖 Bots:</label>
+              <select id="botCountSelect" class="selector-input">
+                <option value="1">1 Bot</option>
+                <option value="2">2 Bots</option>
+                <option value="3" selected>3 Bots</option>
+                <option value="4">4 Bots</option>
+              </select>
+            </div>
+
+            <button id="muteBtn" class="btn btn-secondary active">
+              🔊 Sound: ON
+            </button>
+            <button id="debugBtn" class="btn btn-secondary">
+              🛠️ AI Debug: OFF
+            </button>
+            <button id="restartBtn" class="btn btn-primary">
+              🔄 New Match
+            </button>
+            <button id="menuBtn" class="btn btn-secondary">
+              ☰ Menu
+            </button>
+          </div>
+        </header>
+
+        <!-- Main Battle Ground -->
+        <main class="battle-main">
+          <!-- Left Panel: Player Status -->
+          <aside class="side-panel left-panel">
+            <div class="panel-card player-card">
+              <div class="card-header">
+                <div class="player-avatar p1-avatar">💣</div>
+                <div class="player-meta">
+                  <span id="p1Badge" class="player-badge">PLAYER 1</span>
+                  <h3 id="p1Name" class="player-name">White Bomber</h3>
+                </div>
+              </div>
+
+              <div class="status-indicator-box">
+                <span id="p1Status" class="status-alive">ALIVE</span>
+              </div>
+
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <span class="stat-icon">💣</span>
+                  <div class="stat-detail">
+                    <span class="stat-label">BOMBS</span>
+                    <span id="p1Bombs" class="stat-val">0/1</span>
+                  </div>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-icon">🔥</span>
+                  <div class="stat-detail">
+                    <span class="stat-label">FLAME</span>
+                    <span id="p1Power" class="stat-val">1</span>
+                  </div>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-icon">⚡</span>
+                  <div class="stat-detail">
+                    <span class="stat-label">SPEED</span>
+                    <span id="p1Speed" class="stat-val">160</span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="p2Row" class="p2-row hidden">
+                <span class="player-badge p2-badge">PLAYER 2</span>
+                <span id="p2Status" class="status-alive">ALIVE</span>
+                <span id="p2Stats" class="p2-stats">💣 0/1 · 🔥 1 · ⚡ 160</span>
+              </div>
+
+              <div class="controls-guide">
+                <h4>⌨️ CONTROLS</h4>
+                <ul>
+                  <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> Move</li>
+                  <li><kbd>Space</kbd> Drop Bomb</li>
+                  <li id="p2ControlHint" class="hidden"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> + <kbd>Enter</kbd> Player 2</li>
+                  <li class="local-control"><kbd>P</kbd> Pause Match</li>
+                  <li><kbd>M</kbd> Toggle Sound</li>
+                  <li class="local-control"><kbd>R</kbd> Restart Match</li>
+                  <li class="local-control"><kbd>F1</kbd> Toggle AI Heatmap</li>
+                  <li><kbd>Esc</kbd> Back to Menu</li>
+                </ul>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Center: Game Canvas -->
+          <section class="canvas-viewport">
+            <div class="canvas-frame">
+              <canvas id="gameCanvas" width="720" height="624"></canvas>
+            </div>
+          </section>
+
+          <!-- Right Panel: AI Opponents & Live Status -->
+          <aside class="side-panel right-panel">
+            <div class="panel-card ai-panel">
+              <div class="panel-top-row">
+                <h3>🤖 ARENA COMBATANTS</h3>
+                <span id="aliveCounter" class="alive-count-badge">4 / 4 Alive</span>
+              </div>
+
+              <div id="botCardsContainer" class="bot-cards-list">
+                <!-- Dynamically populated -->
+              </div>
+
+              <div class="re-mechanics-card">
+                <h4>🔬 RE-ENGINEERED SPECS</h4>
+                <p>• <strong>FUN_004268A0:</strong> 15×13 arena matrix</p>
+                <p>• <strong>FUN_0044BEB0:</strong> AI target threat scores</p>
+                <p>• <strong>FUN_0044FBC0:</strong> BFS wavefront pathfinding</p>
+                <p>• <strong>FUN_0043B450:</strong> 2.0s fuse countdown</p>
+                <p>• <strong>Objective:</strong> <span id="objectiveText">Eliminate all bots to Win! If you fall, it's Defeat (No Draws).</span></p>
+              </div>
+            </div>
+          </aside>
+        </main>
+
+        <!-- Game Over / Victory Modal -->
+        <div id="endModal" class="modal-backdrop hidden">
+          <div class="modal-card">
+            <div id="endIcon" class="modal-icon">🏆</div>
+            <h2 id="endTitle" class="modal-title">VICTORY!</h2>
+            <p id="endSubtitle" class="modal-subtitle">
+              You eliminated all AI opponents and conquered the arena!
+            </p>
+            <p id="endWaitHint" class="screen-hint hidden">
+              Waiting for the host to start a rematch…
+            </p>
+            <div class="modal-actions">
+              <button id="playAgainBtn" class="btn btn-primary btn-large">
+                🎮 Play Again
+              </button>
+              <button id="changeLevelBtn" class="btn btn-secondary btn-large">
+                🗺️ Change Level
+              </button>
+              <button id="endMenuBtn" class="btn btn-secondary btn-large">
+                ☰ Menu
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
