@@ -88,4 +88,5 @@ website/.i18n-*/
 # Except these folders and .gitignore itself
 !/bomberman-ts/
 !/bomberman-server/
+!/elysia-socker/
 !/.gitignore
