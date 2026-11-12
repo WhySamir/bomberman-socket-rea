@@ -48,6 +48,12 @@ const io = new Server<
 
 registerHandlers(io, rooms);
 
+// Lightweight keep-alive endpoint for uptime pings (e.g. cron-job.org on Render).
+app.get("/ping", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.status(200).send("pong");
+});
+
 app.get("/healthz", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.json({

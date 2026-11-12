@@ -102,6 +102,16 @@ export function createBombermanServer(config: ServerConfig) {
   };
 
   const app = new Elysia()
+    // Lightweight keep-alive endpoint for uptime pings (e.g. cron-job.org on Render).
+    .get("/ping", () =>
+      new Response("pong", {
+        status: 200,
+        headers: {
+          "content-type": "text/plain; charset=utf-8",
+          "cache-control": "no-store",
+        },
+      }),
+    )
     .get("/healthz", () =>
       json({
         ok: true,
